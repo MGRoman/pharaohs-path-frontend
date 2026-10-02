@@ -1,24 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useState, type FormEvent } from 'react';
+import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FAQ, ReadyCTA, SectionHeading, Testimonials, TourGrid } from '@/components/travel/site';
+import { images, tours, gallery } from '@/data/content';
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+export const Route=createFileRoute('/')({head:()=>({meta:[{title:"Pharaoh's Path — путешествия по Египту"},{name:'description',content:'Авторские путешествия по Египту: пирамиды, круизы по Нилу и Красное море.'},{property:'og:title',content:"Pharaoh's Path — путешествия по Египту"},{property:'og:description',content:'Авторские путешествия по Египту: пирамиды, круизы по Нилу и Красное море.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary_large_image'}]}),component:Home});
+function Home(){const navigate=useNavigate();const [region,setRegion]=useState('');const [date,setDate]=useState('');const [travelers,setTravelers]=useState('2');const [budget,setBudget]=useState('');function submit(e:FormEvent){e.preventDefault();navigate({to:'/tours',search:{region,date,travelers,budget}})}return <><section className="hero"><img src={images.giza} alt="Пирамиды Гизы в лучах закатного солнца" fetchPriority="high"/><div className="container hero-content"><div className="eyebrow"><span/> Искусство путешествовать по Египту</div><h1>Египет: там, где оживают легенды</h1><p className="hero-sub">Авторские путешествия от древних пирамид до коралловых рифов Красного моря.</p><div className="hero-actions"><Button asChild className="button-gold"><Link to="/tours">Смотреть туры <ArrowUpRight size={17}/></Link></Button><Button asChild className="button-line"><Link to="/booking">Подобрать путешествие <ArrowRight size={17}/></Link></Button></div><div className="hero-stats"><div><strong>12+</strong><span>лет опыта</span></div><div><strong>4 800+</strong><span>путешественников</span></div><div><strong>35+</strong><span>маршрутов</span></div></div></div><div className="hero-scroll">Листайте вниз <ArrowDown size={12}/></div></section>
+<div className="container search-wrap"><form className="search-panel" onSubmit={submit}><div className="field"><label htmlFor="region">Направление</label><select id="region" value={region} onChange={e=>setRegion(e.target.value)}><option value="">Любое направление</option>{['Каир и Гиза','Луксор','Асуан','Шарм-эль-Шейх','Хургада','Марса-Алам','Несколько регионов'].map(x=><option key={x}>{x}</option>)}</select></div><div className="field"><label htmlFor="travel-date">Дата поездки</label><input id="travel-date" type="date" min={new Date().toISOString().slice(0,10)} value={date} onChange={e=>setDate(e.target.value)}/></div><div className="field"><label htmlFor="travelers">Путешественники</label><input id="travelers" type="number" min="1" max="20" value={travelers} onChange={e=>setTravelers(e.target.value)}/></div><div className="field"><label htmlFor="budget">Бюджет на человека</label><select id="budget" value={budget} onChange={e=>setBudget(e.target.value)}><option value="">Любой бюджет</option><option value="low">До 75 000 ₽</option><option value="mid">75 000–120 000 ₽</option><option value="high">120 000–200 000 ₽</option><option value="luxury">От 200 000 ₽</option></select></div><Button type="submit" className="button-gold">Найти путешествие <ArrowRight size={16}/></Button></form></div>
+<section className="section"><div className="container editorial"><div className="editorial-image"><img src={images.nile} alt="Парусная лодка на Ниле у Луксора" loading="lazy"/></div><div className="editorial-text"><div className="eyebrow"><span/> О Pharaoh's Path</div><h2>Мы показываем Египет не таким, каким его видят туристы, а таким, каким его запоминают.</h2><p>Мы верим, что настоящее путешествие начинается там, где заканчивается готовый маршрут. Поэтому каждую поездку мы собираем вокруг вас — ваших интересов, ритма и мечты.</p><p>Приватные встречи с историей, круизы по Нилу, дни у моря и простые моменты рядом с людьми, для которых Египет — дом. Всё это становится вашей личной историей.</p><Link to="/about" className="text-link">Узнать о нас <ArrowUpRight size={16}/></Link><div className="stats-strip"><div><strong>12+</strong><span>лет опыта</span></div><div><strong>4 800+</strong><span>путешественников</span></div><div><strong>35+</strong><span>маршрутов</span></div><div><strong>24/7</strong><span>поддержка</span></div></div></div></div></section>
+<section className="section tours-section"><div className="container"><SectionHeading eyebrow="Авторские маршруты" title="Выберите свой Египет" aside={<p className="muted-copy">От первых шагов среди пирамид до последнего заката у моря — найдите путешествие, которое станет вашим.</p>}/><TourGrid items={tours}/><div className="section-cta"><Button asChild variant="outline"><Link to="/tours">Все путешествия <ArrowUpRight size={16}/></Link></Button></div></div></section>
+<section className="section"><div className="container"><SectionHeading eyebrow="Моменты путешествия" title="Египет в кадре" aside={<Link className="text-link" to="/gallery">Смотреть галерею <ArrowUpRight size={16}/></Link>}/><div className="home-gallery"><img src={gallery[2].image} alt={gallery[2].title} loading="lazy"/><img src={gallery[4].image} alt={gallery[4].title} loading="lazy"/><img src={gallery[5].image} alt={gallery[5].title} loading="lazy"/></div></div></section><Testimonials/><FAQ/><ReadyCTA/></>}
