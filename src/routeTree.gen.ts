@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as BlogRouteImport } from './routes/blog'
+import { Route as BookingRouteImport } from './routes/booking'
+import { Route as ContactsRouteImport } from './routes/contacts'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as ToursRouteImport } from './routes/tours'
 import { Route as BlogIdRouteImport } from './routes/blog.$id'
@@ -22,9 +25,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogRoute = BlogRouteImport.update({
   id: '/blog',
   path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingRoute = BookingRouteImport.update({
+  id: '/booking',
+  path: '/booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -55,7 +73,10 @@ const ToursIdRoute = ToursIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
   '/gallery': typeof GalleryRoute
   '/tours': typeof ToursRouteWithChildren
   '/blog/$id': typeof BlogIdRoute
@@ -64,7 +85,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
   '/gallery': typeof GalleryRoute
   '/blog/$id': typeof BlogIdRoute
   '/tours/$id': typeof ToursIdRoute
@@ -73,7 +97,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
   '/gallery': typeof GalleryRoute
   '/tours': typeof ToursRouteWithChildren
   '/blog/$id': typeof BlogIdRoute
@@ -84,18 +111,33 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/blog'
+    | '/booking'
+    | '/contacts'
     | '/gallery'
     | '/tours'
     | '/blog/$id'
     | '/tours/$id'
     | '/tours/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blog' | '/gallery' | '/blog/$id' | '/tours/$id' | '/tours'
+  to:
+    | '/'
+    | '/about'
+    | '/blog'
+    | '/booking'
+    | '/contacts'
+    | '/gallery'
+    | '/blog/$id'
+    | '/tours/$id'
+    | '/tours'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/blog'
+    | '/booking'
+    | '/contacts'
     | '/gallery'
     | '/tours'
     | '/blog/$id'
@@ -105,7 +147,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   BlogRoute: typeof BlogRouteWithChildren
+  BookingRoute: typeof BookingRoute
+  ContactsRoute: typeof ContactsRoute
   GalleryRoute: typeof GalleryRoute
   ToursRoute: typeof ToursRouteWithChildren
 }
@@ -119,11 +164,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog': {
       id: '/blog'
       path: '/blog'
       fullPath: '/blog'
       preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking': {
+      id: '/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof BookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -188,7 +254,10 @@ const ToursRouteWithChildren = ToursRoute._addFileChildren(ToursRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   BlogRoute: BlogRouteWithChildren,
+  BookingRoute: BookingRoute,
+  ContactsRoute: ContactsRoute,
   GalleryRoute: GalleryRoute,
   ToursRoute: ToursRouteWithChildren,
 }
