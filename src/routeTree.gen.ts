@@ -10,33 +10,149 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as BookingRouteImport } from './routes/booking'
+import { Route as ContactsRouteImport } from './routes/contacts'
+import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as ToursRouteImport } from './routes/tours'
+import { Route as BlogIdRouteImport } from './routes/blog.$id'
+import { Route as ToursIndexRouteImport } from './routes/tours.index'
+import { Route as ToursIdRouteImport } from './routes/tours.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingRoute = BookingRouteImport.update({
+  id: '/booking',
+  path: '/booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToursRoute = ToursRouteImport.update({
+  id: '/tours',
+  path: '/tours',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIdRoute = BlogIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BlogRoute,
+} as any)
+const ToursIndexRoute = ToursIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ToursRoute,
+} as any)
+const ToursIdRoute = ToursIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ToursRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
+  '/gallery': typeof GalleryRoute
+  '/tours': typeof ToursRouteWithChildren
+  '/blog/$id': typeof BlogIdRoute
+  '/tours/$id': typeof ToursIdRoute
+  '/tours/': typeof ToursIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
+  '/gallery': typeof GalleryRoute
+  '/blog/$id': typeof BlogIdRoute
+  '/tours/$id': typeof ToursIdRoute
+  '/tours': typeof ToursIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
+  '/booking': typeof BookingRoute
+  '/contacts': typeof ContactsRoute
+  '/gallery': typeof GalleryRoute
+  '/tours': typeof ToursRouteWithChildren
+  '/blog/$id': typeof BlogIdRoute
+  '/tours/$id': typeof ToursIdRoute
+  '/tours/': typeof ToursIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/blog'
+    | '/booking'
+    | '/contacts'
+    | '/gallery'
+    | '/tours'
+    | '/blog/$id'
+    | '/tours/$id'
+    | '/tours/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/blog'
+    | '/booking'
+    | '/contacts'
+    | '/gallery'
+    | '/blog/$id'
+    | '/tours/$id'
+    | '/tours'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/blog'
+    | '/booking'
+    | '/contacts'
+    | '/gallery'
+    | '/tours'
+    | '/blog/$id'
+    | '/tours/$id'
+    | '/tours/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  BlogRoute: typeof BlogRouteWithChildren
+  BookingRoute: typeof BookingRoute
+  ContactsRoute: typeof ContactsRoute
+  GalleryRoute: typeof GalleryRoute
+  ToursRoute: typeof ToursRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +164,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking': {
+      id: '/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof BookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tours': {
+      id: '/tours'
+      path: '/tours'
+      fullPath: '/tours'
+      preLoaderRoute: typeof ToursRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$id': {
+      id: '/blog/$id'
+      path: '/$id'
+      fullPath: '/blog/$id'
+      preLoaderRoute: typeof BlogIdRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/tours/': {
+      id: '/tours/'
+      path: '/'
+      fullPath: '/tours/'
+      preLoaderRoute: typeof ToursIndexRouteImport
+      parentRoute: typeof ToursRoute
+    }
+    '/tours/$id': {
+      id: '/tours/$id'
+      path: '/$id'
+      fullPath: '/tours/$id'
+      preLoaderRoute: typeof ToursIdRouteImport
+      parentRoute: typeof ToursRoute
+    }
   }
 }
 
+interface BlogRouteChildren {
+  BlogIdRoute: typeof BlogIdRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
+  BlogIdRoute: BlogIdRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
+interface ToursRouteChildren {
+  ToursIdRoute: typeof ToursIdRoute
+  ToursIndexRoute: typeof ToursIndexRoute
+}
+
+const ToursRouteChildren: ToursRouteChildren = {
+  ToursIdRoute: ToursIdRoute,
+  ToursIndexRoute: ToursIndexRoute,
+}
+
+const ToursRouteWithChildren = ToursRoute._addFileChildren(ToursRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  BlogRoute: BlogRouteWithChildren,
+  BookingRoute: BookingRoute,
+  ContactsRoute: ContactsRoute,
+  GalleryRoute: GalleryRoute,
+  ToursRoute: ToursRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
