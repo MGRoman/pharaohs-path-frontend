@@ -1,14 +1,17 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useQueryErrorResetBoundary, type QueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import { Provider } from "@/components/provider";
 import { Navbar, Footer } from "@/components/travel/site";
 
 import appCss from "../styles.css?url";
@@ -16,61 +19,76 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
-      </div>
-    </div>
+    <Box
+      minH="100svh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      px="4"
+      textAlign="center"
+    >
+      <Box maxW="md">
+        <Heading as="h1" fontFamily="heading" fontSize="7xl" fontWeight="500">
+          404
+        </Heading>
+        <Heading as="h2" mt="4" fontSize="xl">
+          Страница не найдена
+        </Heading>
+        <Text mt="2" fontSize="sm" color="mist">
+          Такой страницы нет или она была перенесена.
+        </Text>
+        <Button asChild mt="6" bg="navy" color="ivory">
+          <Link to="/">На главную</Link>
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  const queryErrorResetBoundary = useQueryErrorResetBoundary();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
+  useEffect(() => {
+    queryErrorResetBoundary.reset();
+  }, [queryErrorResetBoundary]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+    <Box
+      minH="100svh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      px="4"
+      textAlign="center"
+    >
+      <Box maxW="md">
+        <Heading as="h1" fontSize="xl">
+          Страница не загрузилась
+        </Heading>
+        <Text mt="2" fontSize="sm" color="mist">
+          Что-то пошло не так. Обновите страницу или вернитесь на главную.
+        </Text>
+        <Flex mt="6" gap="2" justify="center" wrap="wrap">
+          <Button
+            bg="navy"
+            color="ivory"
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
-      </div>
-    </div>
+            Попробовать снова
+          </Button>
+          <Button asChild variant="outline">
+            <a href="/">На главную</a>
+          </Button>
+        </Flex>
+      </Box>
+    </Box>
   );
 }
 
@@ -90,7 +108,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap",
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -107,22 +128,31 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <Provider>{children}</Provider>
         <Scripts />
       </body>
     </html>
   );
 }
 
-function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
-
+function PageEnter() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   return (
-    <QueryClientProvider client={queryClient}>
+    <Box key={pathname} className="page-enter">
+      <Outlet />
+    </Box>
+  );
+}
+
+function RootComponent() {
+  return (
+    <>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Navbar />
-      <main><Outlet /></main>
+      <main>
+        <PageEnter />
+      </main>
       <Footer />
-    </QueryClientProvider>
+    </>
   );
 }
