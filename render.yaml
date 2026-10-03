@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pharaohs-path-frontend
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node .output/server/index.mjs
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # vite.config.ts defaults nitro to cloudflare-module (for Lovable); Render needs a Node server
+      - key: NITRO_PRESET
+        value: node-server
+    buildFilter:
+      ignoredPaths:
+        - "**/*.md"
+        - .lovable/**
