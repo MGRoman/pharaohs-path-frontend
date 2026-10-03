@@ -14,35 +14,38 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageIntro, ReadyCTA } from "@/components/travel/site";
 import { SiteContainer } from "@/components/travel/ui";
-import { gallery } from "@/data/content";
+import { galleryCategories } from "@/data/content";
+import { getTranslator, useContent, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/gallery")({
-  head: () => ({
-    meta: [
-      { title: "Галерея Египта — Pharaoh's Path" },
-      {
-        name: "description",
-        content: "Пирамиды, Нил, древние храмы и Красное море в фотографиях наших маршрутов.",
-      },
-      { property: "og:title", content: "Галерея Египта — Pharaoh's Path" },
-      { property: "og:description", content: "Откройте Египет в фотографиях наших путешествий." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "/gallery" },
-    ],
-    links: [{ rel: "canonical", href: "/gallery" }],
-  }),
+  head: ({ match }) => {
+    const { t } = getTranslator(match.context.locale);
+    return seo({
+      locale: match.context.locale,
+      title: t("meta.pageTitle", { title: t("meta.gallery.title") }),
+      description: t("meta.gallery.description"),
+      path: "/gallery",
+    });
+  },
   component: Gallery,
 });
 
-const categories = ["Все", "Пирамиды", "Каир", "Луксор", "Нил", "Красное море", "Пустыня"];
+const filters = ["all", ...galleryCategories] as const;
+type Filter = (typeof filters)[number];
+
+const aspectRatios = ["4 / 5", "4 / 3", "1 / 1", "1 / 1"] as const;
 
 function Gallery() {
-  const [category, setCategory] = useState("Все");
+  const { t, dir } = useTranslate();
+  const { gallery } = useContent();
+  const [category, setCategory] = useState<Filter>("all");
   const [selected, setSelected] = useState<number | null>(null);
   const touchX = useRef(0);
-  const visible = gallery.filter((item) => category === "Все" || item.category === category);
+  const visible = gallery.filter((item) => category === "all" || item.category === category);
   const current = selected === null ? undefined : visible[selected];
+  const forwardKey = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
+  const backwardKey = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
 
   function step(delta: number) {
     setSelected((index) =>
@@ -50,16 +53,19 @@ function Gallery() {
     );
   }
 
+  const label = (item: Filter) =>
+    item === "all" ? t("gallery.all") : t(`galleryCategories.${item}`);
+
   return (
     <Box>
       <PageIntro
-        eyebrow="Визуальный дневник"
-        title="Моменты Египта"
-        text="Есть места, которые невозможно объяснить словами. Их можно только почувствовать."
+        eyebrow={t("gallery.eyebrow")}
+        title={t("gallery.title")}
+        text={t("gallery.text")}
       />
       <SiteContainer pb="24">
-        <Flex role="group" aria-label="Категории фотографий" gap="2" wrap="wrap" mb="7">
-          {categories.map((item) => (
+        <Flex role="group" aria-label={t("gallery.categories")} gap="2" wrap="wrap" mb="7">
+          {filters.map((item) => (
             <Button
               key={item}
               aria-pressed={category === item}
@@ -75,7 +81,7 @@ function Gallery() {
                 setSelected(null);
               }}
             >
-              {item}
+              {label(item)}
             </Button>
           ))}
         </Flex>
@@ -90,7 +96,7 @@ function Gallery() {
             <Button
               unstyled
               type="button"
-              key={`${item.title}-${index}`}
+              key={item.id}
               display="block"
               w="100%"
               h="auto"
@@ -98,12 +104,12 @@ function Gallery() {
               p="0"
               border="0"
               bg="transparent"
-              textAlign="left"
+              textAlign="start"
               cursor="pointer"
               position="relative"
               overflow="hidden"
               css={{ breakInside: "avoid" }}
-              aria-label={`Открыть: ${item.title}`}
+              aria-label={t("gallery.open", { title: item.title })}
               onClick={() => setSelected(index)}
               _hover={{ "& img": { transform: "scale(1.04)" } }}
             >
@@ -115,15 +121,12 @@ function Gallery() {
                 objectFit="cover"
                 loading="lazy"
                 transition="transform .7s cubic-bezier(.22,1,.36,1)"
-                css={{
-                  aspectRatio: index % 4 === 0 ? "4 / 5" : index % 4 === 1 ? "4 / 3" : "1 / 1",
-                }}
+                aspectRatio={aspectRatios[index % aspectRatios.length]}
               />
               <Text
                 position="absolute"
                 bottom="0"
-                left="0"
-                right="0"
+                insetInline="0"
                 px="4"
                 pt="8"
                 pb="4"
@@ -154,28 +157,33 @@ function Gallery() {
               justifyContent="center"
               p={{ base: "16", md: "20" }}
               onKeyDown={(event) => {
-                if (event.key === "ArrowRight") step(1);
-                if (event.key === "ArrowLeft") step(-1);
+                if (event.key === forwardKey) step(1);
+                if (event.key === backwardKey) step(-1);
               }}
               onTouchStart={(event) => {
                 touchX.current = event.touches[0]?.clientX ?? 0;
               }}
               onTouchEnd={(event) => {
                 const dx = (event.changedTouches[0]?.clientX ?? 0) - touchX.current;
-                if (Math.abs(dx) > 45) step(dx < 0 ? 1 : -1);
+                if (Math.abs(dx) < 45) return;
+                step((dir === "rtl" ? dx > 0 : dx < 0) ? 1 : -1);
               }}
             >
-              <Dialog.Title srOnly>Просмотр фотографии</Dialog.Title>
+              <Dialog.Title srOnly>{t("gallery.viewer")}</Dialog.Title>
               <Dialog.CloseTrigger asChild top="4" insetEnd="4">
-                <CloseButton aria-label="Закрыть" color="ivory" _hover={{ bg: "whiteAlpha.200" }} />
+                <CloseButton
+                  aria-label={t("common.close")}
+                  color="ivory"
+                  _hover={{ bg: "whiteAlpha.200" }}
+                />
               </Dialog.CloseTrigger>
               <IconButton
-                aria-label="Предыдущая фотография"
+                aria-label={t("gallery.previous")}
                 variant="ghost"
                 color="ivory"
                 _hover={{ bg: "whiteAlpha.200" }}
                 position="absolute"
-                left="3"
+                insetStart="3"
                 top="50%"
                 transform="translateY(-50%)"
                 onClick={() => step(-1)}
@@ -184,7 +192,7 @@ function Gallery() {
               </IconButton>
               {current && (
                 <Image
-                  key={current.image}
+                  key={current.id}
                   src={current.image}
                   alt={current.title}
                   maxW="100%"
@@ -194,12 +202,12 @@ function Gallery() {
                 />
               )}
               <IconButton
-                aria-label="Следующая фотография"
+                aria-label={t("gallery.next")}
                 variant="ghost"
                 color="ivory"
                 _hover={{ bg: "whiteAlpha.200" }}
                 position="absolute"
-                right="3"
+                insetEnd="3"
                 top="50%"
                 transform="translateY(-50%)"
                 onClick={() => step(1)}
@@ -213,7 +221,12 @@ function Gallery() {
                 color="ivory"
                 aria-live="polite"
               >
-                {current?.title} · {(selected ?? 0) + 1} / {visible.length}
+                {current &&
+                  t("gallery.position", {
+                    title: current.title,
+                    index: (selected ?? 0) + 1,
+                    total: visible.length,
+                  })}
               </Dialog.Description>
             </Dialog.Content>
           </Dialog.Positioner>

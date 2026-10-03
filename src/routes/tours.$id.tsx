@@ -1,40 +1,54 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Accordion, Box, Button, Flex, Grid, Image, Text } from "@chakra-ui/react";
+import { Accordion, Box, Button, Flex, Grid, Image, Text, type TextProps } from "@chakra-ui/react";
 import { ArrowRight, Star } from "lucide-react";
 import { ReadyCTA, TourGrid } from "@/components/travel/site";
 import { goldProps } from "@/components/travel/styles";
 import { Eyebrow, SiteContainer } from "@/components/travel/ui";
-import { formatDays, formatPrice, tours } from "@/data/content";
+import { tours, type TourId } from "@/data/content";
+import { getContent, getTranslator, useContent, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
+
+const isTourId = (id: string): id is TourId => tours.some((tour) => tour.id === id);
 
 export const Route = createFileRoute("/tours/$id")({
   loader: ({ params }) => {
-    const tour = tours.find((item) => item.id === params.id);
-    if (!tour) throw notFound();
-    return tour;
+    if (!isTourId(params.id)) throw notFound();
+    return { id: params.id };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData ? `${loaderData.title} — Pharaoh's Path` : "Путешествие не найдено" },
-      {
-        name: "description",
-        content: loaderData?.description || "Авторские путешествия по Египту.",
-      },
-      { property: "og:title", content: loaderData?.title || "Путешествие не найдено" },
-      {
-        property: "og:description",
-        content: loaderData?.description || "Авторские путешествия по Египту.",
-      },
-      { property: "og:type", content: "product" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: `/tours/${loaderData?.id || ""}` },
-    ],
-    links: [{ rel: "canonical", href: `/tours/${loaderData?.id || ""}` }],
-  }),
+  head: ({ match, loaderData }) => {
+    const { t } = getTranslator(match.context.locale);
+    const tour = getContent(match.context.locale).tours.find((item) => item.id === loaderData?.id);
+    if (!tour) return { meta: [{ title: t("tour.notFound") }] };
+    return seo({
+      locale: match.context.locale,
+      title: t("meta.pageTitle", { title: tour.title }),
+      description: tour.description,
+      path: `/tours/${tour.id}`,
+      type: "product",
+      image: tour.image,
+    });
+  },
   component: Detail,
 });
 
+const sectionTitleProps = {
+  as: "h2",
+  fontFamily: "heading",
+  fontWeight: "500",
+  fontSize: { base: "36px", md: "48px" },
+  mb: "6",
+} satisfies TextProps;
+
 function Detail() {
-  const tour = Route.useLoaderData();
+  const { id } = Route.useLoaderData();
+  const { t, formatNumber, formatPrice, formatRating } = useTranslate();
+  const { tours: localized } = useContent();
+  const tour = localized.find((item) => item.id === id);
+  if (!tour) return null;
+
+  const days = t("common.days", { count: tour.days });
+  const type = t(`tourTypes.${tour.type}`);
+
   return (
     <Box>
       <Box
@@ -63,7 +77,7 @@ function Detail() {
         />
         <SiteContainer position="relative" zIndex="1" pb="14">
           <Eyebrow>
-            {tour.type} · {tour.region}
+            {type} · {t(`regions.${tour.region}`)}
           </Eyebrow>
           <Text
             as="h1"
@@ -76,7 +90,11 @@ function Detail() {
             {tour.title}
           </Text>
           <Flex align="center" gap="2" fontSize="sm">
-            <Star size={14} fill="currentColor" /> {tour.rating} · {formatDays(tour.days)}
+            <Star size={14} fill="currentColor" aria-hidden />
+            <span aria-label={t("common.rating", { value: formatRating(tour.rating) })}>
+              {formatRating(tour.rating)}
+            </span>
+            · {days}
           </Flex>
         </SiteContainer>
       </Box>
@@ -87,41 +105,26 @@ function Detail() {
         py={{ base: "10", md: "20" }}
       >
         <Box>
-          <Text
-            as="h2"
-            fontFamily="heading"
-            fontWeight="500"
-            fontSize={{ base: "36px", md: "48px" }}
-            mb="6"
-          >
-            Путешествие, которое останется с вами
-          </Text>
+          <Text {...sectionTitleProps}>{t("tour.introTitle")}</Text>
           <Text fontSize="sm" lineHeight="1.9" color="mist">
-            {tour.description} Мы продумали маршрут так, чтобы у вас было время не только увидеть
-            главные места, но и почувствовать их настроение.
+            {tour.description} {t("tour.introMore")}
           </Text>
           <Box pt="16">
-            <Text
-              as="h2"
-              fontFamily="heading"
-              fontWeight="500"
-              fontSize={{ base: "36px", md: "48px" }}
-              mb="6"
-            >
-              Программа путешествия
-            </Text>
+            <Text {...sectionTitleProps}>{t("tour.program")}</Text>
             <Accordion.Root collapsible defaultValue={["day-0"]}>
               {tour.itinerary.map((day, index) => (
                 <Accordion.Item key={day.title} value={`day-${index}`} borderColor="line">
-                  <Accordion.ItemTrigger py="5" fontSize="md">
-                    <Text as="span" color="gold" fontSize="11px" mr="4">
-                      День {String(index + 1).padStart(2, "0")}
+                  <Accordion.ItemTrigger py="5" fontSize="md" textAlign="start">
+                    <Text as="span" color="gold" fontSize="11px" me="4" whiteSpace="nowrap">
+                      {t("tour.day", {
+                        day: formatNumber(index + 1, { minimumIntegerDigits: 2 }),
+                      })}
                     </Text>
                     {day.title}
                     <Accordion.ItemIndicator />
                   </Accordion.ItemTrigger>
                   <Accordion.ItemContent>
-                    <Accordion.ItemBody color="mist" fontSize="xs" lineHeight="1.8" pl="12" pb="4">
+                    <Accordion.ItemBody color="mist" fontSize="xs" lineHeight="1.8" ps="12" pb="4">
                       {day.detail}
                     </Accordion.ItemBody>
                   </Accordion.ItemContent>
@@ -130,37 +133,27 @@ function Detail() {
             </Accordion.Root>
           </Box>
           <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="8" pt="16">
-            <CheckColumn title="Включено" items={tour.included} />
-            <CheckColumn title="Не включено" items={tour.excluded} />
+            <Box>
+              <Text {...sectionTitleProps}>{t("tour.included")}</Text>
+              <CheckList items={tour.included} />
+            </Box>
+            <Box>
+              <Text {...sectionTitleProps}>{t("tour.excluded")}</Text>
+              <CheckList items={tour.excluded} />
+            </Box>
           </Grid>
           <Box pt="16">
-            <Text
-              as="h2"
-              fontFamily="heading"
-              fontWeight="500"
-              fontSize={{ base: "36px", md: "48px" }}
-              mb="6"
-            >
-              Что взять с собой
-            </Text>
+            <Text {...sectionTitleProps}>{t("tour.packing")}</Text>
             <CheckList items={tour.packing} />
           </Box>
           <Box pt="16">
-            <Text
-              as="h2"
-              fontFamily="heading"
-              fontWeight="500"
-              fontSize={{ base: "36px", md: "48px" }}
-              mb="6"
-            >
-              Моменты маршрута
-            </Text>
+            <Text {...sectionTitleProps}>{t("tour.moments")}</Text>
             <Grid templateColumns="1fr 1fr" gap="3">
               {tour.gallery.map((src, index) => (
                 <Image
-                  key={src + index}
+                  key={`${src}-${index}`}
                   src={src}
-                  alt={`${tour.title} — фотография ${index + 1}`}
+                  alt={t("tour.photo", { title: tour.title, index: index + 1 })}
                   h={{ base: "155px", md: "220px" }}
                   w="100%"
                   objectFit="cover"
@@ -170,44 +163,32 @@ function Detail() {
             </Grid>
           </Box>
           <Box pt="16">
-            <Text
-              as="h2"
-              fontFamily="heading"
-              fontWeight="500"
-              fontSize={{ base: "36px", md: "48px" }}
-              mb="4"
-            >
-              Голоса путешественников
+            <Text {...sectionTitleProps} mb="4">
+              {t("tour.voices")}
             </Text>
-            <Text color="mist" fontSize="sm" lineHeight="1.9">
-              «Путешествие открыло для нас совершенно другой Египет. Всё было очень личным,
-              спокойным и удивительно красивым»
+            <Text as="blockquote" color="mist" fontSize="sm" lineHeight="1.9">
+              {t("tour.quote")}
             </Text>
             <Text mt="3" color="mist" fontSize="sm">
-              — Гости Pharaoh's Path
+              {t("tour.quoteAuthor")}
             </Text>
           </Box>
           <Box pt="16">
-            <Text
-              as="h2"
-              fontFamily="heading"
-              fontWeight="500"
-              fontSize={{ base: "36px", md: "48px" }}
-              mb="4"
-            >
-              Готовы отправиться?
+            <Text {...sectionTitleProps} mb="4">
+              {t("tour.ready")}
             </Text>
             <Text color="mist" fontSize="sm" mb="5">
-              Оставьте заявку, и мы вместе продумаем детали вашего путешествия.
+              {t("tour.readyText")}
             </Text>
             <Button asChild {...goldProps}>
               <Link to="/booking" search={{ tour: tour.id }}>
-                Забронировать тур <ArrowRight size={16} />
+                {t("tour.bookTour")} <ArrowRight size={16} />
               </Link>
             </Button>
           </Box>
         </Box>
         <Box
+          as="aside"
           position={{ base: "static", lg: "sticky" }}
           top="110px"
           alignSelf="start"
@@ -218,19 +199,19 @@ function Detail() {
           order={{ base: -1, lg: 0 }}
         >
           <Text fontSize="11px" color="mist">
-            Стоимость путешествия от
+            {t("tour.priceFrom")}
           </Text>
           <Text fontFamily="heading" fontWeight="600" fontSize="42px">
             {formatPrice(tour.price)}
           </Text>
           <Text fontSize="11px" color="mist">
-            за одного путешественника
+            {t("tour.perTraveler")}
           </Text>
-          <Box mt="6">
+          <Box as="dl" mt="6">
             {[
-              ["Продолжительность", formatDays(tour.days)],
-              ["Формат", tour.type],
-              ["Оценка гостей", `${tour.rating} / 5`],
+              [t("tour.duration"), days],
+              [t("tour.format"), type],
+              [t("tour.rating"), t("tour.ratingValue", { value: formatRating(tour.rating) })],
             ].map(([label, value]) => (
               <Flex
                 key={label}
@@ -240,30 +221,28 @@ function Detail() {
                 py="3"
                 fontSize="11px"
               >
-                <Text color="mist">{label}</Text>
-                <Text fontWeight="700">{value}</Text>
+                <Text as="dt" color="mist">
+                  {label}
+                </Text>
+                <Text as="dd" fontWeight="700">
+                  {value}
+                </Text>
               </Flex>
             ))}
           </Box>
           <Button asChild {...goldProps} w="100%" mt="4">
             <Link to="/booking" search={{ tour: tour.id }}>
-              Забронировать путешествие <ArrowRight size={16} />
+              {t("tour.book")} <ArrowRight size={16} />
             </Link>
           </Button>
         </Box>
       </SiteContainer>
       <Box bg="sand" py={{ base: "16", md: "24" }}>
         <SiteContainer>
-          <Text
-            as="h2"
-            fontFamily="heading"
-            fontWeight="500"
-            fontSize={{ base: "36px", md: "48px" }}
-            mb="8"
-          >
-            Вам также понравится
+          <Text {...sectionTitleProps} mb="8">
+            {t("tour.related")}
           </Text>
-          <TourGrid items={tours.filter((item) => item.id !== tour.id).slice(0, 3)} />
+          <TourGrid items={localized.filter((item) => item.id !== tour.id).slice(0, 3)} />
         </SiteContainer>
       </Box>
       <ReadyCTA />
@@ -271,24 +250,7 @@ function Detail() {
   );
 }
 
-function CheckColumn({ title, items }: { title: string; items: string[] }) {
-  return (
-    <Box>
-      <Text
-        as="h2"
-        fontFamily="heading"
-        fontWeight="500"
-        fontSize={{ base: "36px", md: "48px" }}
-        mb="6"
-      >
-        {title}
-      </Text>
-      <CheckList items={items} />
-    </Box>
-  );
-}
-
-function CheckList({ items }: { items: string[] }) {
+function CheckList({ items }: { items: readonly string[] }) {
   return (
     <Box as="ul" listStyleType="none" p="0" m="0">
       {items.map((item) => (
@@ -302,7 +264,7 @@ function CheckList({ items }: { items: string[] }) {
           color="mist"
           gap="2"
         >
-          <Text as="span" color="turquoise">
+          <Text as="span" color="turquoise" aria-hidden>
             ✓
           </Text>
           {item}

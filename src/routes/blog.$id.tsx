@@ -1,40 +1,48 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Box, Flex, Image, Text } from "@chakra-ui/react";
+import { Box, Image, Text } from "@chakra-ui/react";
 import { ArrowLeft } from "lucide-react";
-import { Eyebrow, SiteContainer } from "@/components/travel/ui";
-import { articles } from "@/data/content";
+import { Eyebrow, SiteContainer, TextLink } from "@/components/travel/ui";
+import { articles, type ArticleId } from "@/data/content";
+import { getContent, getTranslator, useContent, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
+
+const isArticleId = (id: string): id is ArticleId => articles.some((article) => article.id === id);
 
 export const Route = createFileRoute("/blog/$id")({
   loader: ({ params }) => {
-    const article = articles.find((item) => item.id === params.id);
-    if (!article) throw notFound();
-    return article;
+    if (!isArticleId(params.id)) throw notFound();
+    return { id: params.id };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData ? `${loaderData.title} — Pharaoh's Path` : "Статья не найдена" },
-      { name: "description", content: loaderData?.excerpt || "Журнал путешествий по Египту." },
-      { property: "og:title", content: loaderData?.title || "Статья не найдена" },
-      {
-        property: "og:description",
-        content: loaderData?.excerpt || "Журнал путешествий по Египту.",
-      },
-      { property: "og:type", content: "article" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: `/blog/${loaderData?.id || ""}` },
-    ],
-    links: [{ rel: "canonical", href: `/blog/${loaderData?.id || ""}` }],
-  }),
+  head: ({ match, loaderData }) => {
+    const { t } = getTranslator(match.context.locale);
+    const article = getContent(match.context.locale).articles.find(
+      (item) => item.id === loaderData?.id,
+    );
+    if (!article) return { meta: [{ title: t("blog.notFound") }] };
+    return seo({
+      locale: match.context.locale,
+      title: t("meta.pageTitle", { title: article.title }),
+      description: article.excerpt,
+      path: `/blog/${article.id}`,
+      type: "article",
+      image: article.image,
+    });
+  },
   component: Article,
 });
 
 function Article() {
-  const article = Route.useLoaderData();
+  const { id } = Route.useLoaderData();
+  const { t, formatDate } = useTranslate();
+  const article = useContent().articles.find((item) => item.id === id);
+  if (!article) return null;
+
   return (
     <Box as="article">
       <SiteContainer pt="20" pb="8">
         <Eyebrow>
-          {article.category} · {article.date}
+          {t(`articleCategories.${article.category}`)} ·{" "}
+          <time dateTime={article.date}>{formatDate(article.date)}</time>
         </Eyebrow>
         <Text
           as="h1"
@@ -53,7 +61,7 @@ function Article() {
       <Box position="relative" h={{ base: "280px", md: "490px" }}>
         <Image
           src={article.image}
-          alt={article.title}
+          alt=""
           position="absolute"
           inset="0"
           w="100%"
@@ -70,23 +78,11 @@ function Article() {
             {paragraph}
           </Text>
         ))}
-        <Flex
-          asChild
-          align="center"
-          gap="2"
-          mt="8"
-          w="fit-content"
-          borderBottomWidth="1px"
-          borderColor="gold"
-          pb="2"
-          fontSize="xs"
-          fontWeight="700"
-          _hover={{ color: "gold" }}
-        >
+        <TextLink mt="8">
           <Link to="/blog">
-            <ArrowLeft size={16} /> Все статьи
+            <ArrowLeft size={16} /> {t("blog.all")}
           </Link>
-        </Flex>
+        </TextLink>
       </Box>
     </Box>
   );

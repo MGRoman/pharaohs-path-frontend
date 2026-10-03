@@ -15,139 +15,128 @@ import { SlidersHorizontal } from "lucide-react";
 import { PageIntro, TourGrid } from "@/components/travel/site";
 import { goldProps } from "@/components/travel/styles";
 import { SiteContainer } from "@/components/travel/ui";
-import { formatTrips, tours } from "@/data/content";
+import { useBudgetLabel } from "@/components/travel/use-budget-label";
+import {
+  budgets,
+  durations,
+  inRange,
+  regions,
+  tourTypes,
+  type Budget,
+  type Duration,
+  type Region,
+  type TourType,
+} from "@/data/content";
+import { getTranslator, useContent, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
 
-type Search = { region?: string; date?: string; travelers?: string; budget?: string };
+type Search = { region?: Region; budget?: Budget; date?: string; travelers?: string };
+type Sort = "popular" | "price" | "duration";
+
+const budgetKeys = Object.keys(budgets) as Budget[];
+const durationKeys = Object.keys(durations) as Duration[];
+
+const oneOf = <T extends string>(value: unknown, allowed: readonly T[]): value is T =>
+  (allowed as readonly unknown[]).includes(value);
 
 export const Route = createFileRoute("/tours/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    ...(typeof search["region"] === "string" ? { region: search["region"] } : {}),
-    ...(typeof search["date"] === "string" ? { date: search["date"] } : {}),
-    ...(typeof search["travelers"] === "string" ? { travelers: search["travelers"] } : {}),
-    ...(typeof search["budget"] === "string" ? { budget: search["budget"] } : {}),
+    ...(oneOf(search["region"], regions) && { region: search["region"] }),
+    ...(oneOf(search["budget"], budgetKeys) && { budget: search["budget"] }),
+    ...(typeof search["date"] === "string" && { date: search["date"] }),
+    ...(typeof search["travelers"] === "string" && { travelers: search["travelers"] }),
   }),
-  head: () => ({
-    meta: [
-      { title: "Все путешествия — Pharaoh's Path" },
-      {
-        name: "description",
-        content:
-          "Авторские туры по Египту: исторические маршруты, круизы, море и индивидуальные путешествия.",
-      },
-      { property: "og:title", content: "Все путешествия — Pharaoh's Path" },
-      {
-        property: "og:description",
-        content: "Найдите своё путешествие по Египту среди авторских маршрутов.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "/tours" },
-    ],
-    links: [{ rel: "canonical", href: "/tours" }],
-  }),
+  head: ({ match }) => {
+    const { t } = getTranslator(match.context.locale);
+    return seo({
+      locale: match.context.locale,
+      title: t("meta.pageTitle", { title: t("meta.tours.title") }),
+      description: t("meta.tours.description"),
+      path: "/tours",
+    });
+  },
   component: Tours,
 });
 
-const types = ["Все", "Исторические", "Пляжные", "Круизы", "Приключения", "Индивидуальные"];
-const lengths = [
-  ["Все", ""],
-  ["До 5 дней", "short"],
-  ["5–8 дней", "medium"],
-  ["8–14 дней", "long"],
-  ["14+ дней", "extended"],
-];
-const budgets = [
-  ["Любая цена", ""],
-  ["До 75 000 ₽", "low"],
-  ["75 000–120 000 ₽", "mid"],
-  ["120 000–200 000 ₽", "high"],
-  ["200 000+ ₽", "luxury"],
-];
+type Sortable = { price: number; days: number; rating: number };
+
+const sorters: Record<Sort, (a: Sortable, b: Sortable) => number> = {
+  popular: (a, b) => b.rating - a.rating,
+  price: (a, b) => a.price - b.price,
+  duration: (a, b) => a.days - b.days,
+};
 
 function Tours() {
+  const { t } = useTranslate();
+  const { tours } = useContent();
+  const budgetLabel = useBudgetLabel();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const [type, setType] = useState("Все");
-  const [length, setLength] = useState("");
-  const [budget, setBudget] = useState(search.budget || "");
-  const [sort, setSort] = useState("popular");
+  const [type, setType] = useState<TourType | "">("");
+  const [duration, setDuration] = useState<Duration | "">("");
+  const [budget, setBudget] = useState<Budget | "">(search.budget ?? "");
+  const region = search.region;
+  const [sort, setSort] = useState<Sort>("popular");
   const [mobile, setMobile] = useState(false);
-  const [region, setRegion] = useState(search.region || "");
 
   const filtered = tours
     .filter(
       (tour) =>
-        (type === "Все" || tour.type === type) &&
+        (!type || tour.type === type) &&
         (!region || tour.region === region) &&
-        (!length ||
-          (length === "short"
-            ? tour.days <= 5
-            : length === "medium"
-              ? tour.days >= 5 && tour.days <= 8
-              : length === "long"
-                ? tour.days >= 8 && tour.days <= 14
-                : tour.days >= 14)) &&
-        (!budget ||
-          (budget === "low"
-            ? tour.price <= 75000
-            : budget === "mid"
-              ? tour.price > 75000 && tour.price <= 120000
-              : budget === "high"
-                ? tour.price > 120000 && tour.price <= 200000
-                : tour.price > 200000)),
+        (!duration || inRange(tour.days, durations[duration])) &&
+        (!budget || inRange(tour.price, budgets[budget])),
     )
-    .sort((a, b) =>
-      sort === "price"
-        ? a.price - b.price
-        : sort === "duration"
-          ? a.days - b.days
-          : Number(b.rating) - Number(a.rating),
-    );
+    .sort(sorters[sort]);
 
   function reset() {
-    setType("Все");
-    setLength("");
+    setType("");
+    setDuration("");
     setBudget("");
-    setRegion("");
     navigate({ to: "/tours", search: {} });
   }
 
   const renderControls = (scope: string) => (
     <>
       <FilterGroup
-        title="Тип путешествия"
+        title={t("tours.type")}
         name={`${scope}-tour-type`}
         value={type}
-        options={types.map((item) => [item, item])}
+        options={[
+          ["", t("tours.allTypes")],
+          ...tourTypes.map((key) => [key, t(`tourTypes.${key}`)] as const),
+        ]}
         onChange={setType}
       />
       <FilterGroup
-        title="Продолжительность"
+        title={t("tours.duration")}
         name={`${scope}-duration`}
-        value={length}
-        options={lengths}
-        onChange={setLength}
+        value={duration}
+        options={[
+          ["", t("durations.any")],
+          ...durationKeys.map((key) => [key, t(`durations.${key}`)] as const),
+        ]}
+        onChange={setDuration}
       />
       <FilterGroup
-        title="Стоимость на человека"
+        title={t("tours.price")}
         name={`${scope}-price`}
         value={budget}
-        options={budgets}
+        options={[
+          ["", t("tours.anyPrice")],
+          ...budgetKeys.map((key) => [key, budgetLabel(key)] as const),
+        ]}
         onChange={setBudget}
       />
       <Button variant="ghost" mt="4" px="0" onClick={reset}>
-        Сбросить фильтры
+        {t("tours.reset")}
       </Button>
     </>
   );
 
   return (
     <Box>
-      <PageIntro
-        eyebrow="Коллекция маршрутов"
-        title="Все путешествия"
-        text="Каждый маршрут — приглашение увидеть Египет глубже. Выберите то, что отзывается именно вам."
-      />
+      <PageIntro eyebrow={t("tours.eyebrow")} title={t("tours.title")} text={t("tours.text")} />
       <SiteContainer
         display="grid"
         gridTemplateColumns={{ base: "1fr", lg: "230px minmax(0, 1fr)" }}
@@ -156,7 +145,7 @@ function Tours() {
       >
         <Box
           as="aside"
-          aria-label="Фильтры туров"
+          aria-label={t("tours.filtersLabel")}
           display={{ base: "none", lg: "block" }}
           borderTopWidth="1px"
           borderColor="line"
@@ -173,10 +162,10 @@ function Tours() {
             fontSize="sm"
             color="mist"
           >
-            <span>
-              Найдено {formatTrips(filtered.length)}
-              {region ? ` · ${region}` : ""}
-            </span>
+            <Text as="span" aria-live="polite">
+              {t("tours.found", { count: filtered.length })}
+              {region && ` · ${t(`regions.${region}`)}`}
+            </Text>
             <Flex align="center" gap="2">
               <Button
                 variant="outline"
@@ -184,22 +173,21 @@ function Tours() {
                 borderRadius="2px"
                 onClick={() => setMobile(true)}
               >
-                <SlidersHorizontal size={15} /> Фильтры
+                <SlidersHorizontal size={15} /> {t("tours.filters")}
               </Button>
               <NativeSelect.Root w="180px">
                 <NativeSelect.Field
-                  id="sort"
-                  aria-label="Сортировка"
+                  aria-label={t("tours.sort")}
                   value={sort}
-                  onChange={(event) => setSort(event.target.value)}
+                  onChange={(event) => setSort(event.target.value as Sort)}
                   h="40px"
                   borderColor="line"
                   bg="ivory"
                   fontSize="11px"
                 >
-                  <option value="popular">По популярности</option>
-                  <option value="price">По цене</option>
-                  <option value="duration">По длительности</option>
+                  <option value="popular">{t("tours.sortPopular")}</option>
+                  <option value="price">{t("tours.sortPrice")}</option>
+                  <option value="duration">{t("tours.sortDuration")}</option>
                 </NativeSelect.Field>
                 <NativeSelect.Indicator />
               </NativeSelect.Root>
@@ -210,13 +198,13 @@ function Tours() {
           ) : (
             <Box textAlign="center" py="24" borderWidth="1px" borderColor="line">
               <Text as="h2" fontFamily="heading" fontWeight="500" fontSize="37px">
-                По вашему запросу путешествий не найдено
+                {t("tours.emptyTitle")}
               </Text>
               <Text color="mist" my="4">
-                Попробуйте изменить параметры поиска.
+                {t("tours.emptyText")}
               </Text>
               <Button {...goldProps} h="44px" onClick={reset}>
-                Сбросить фильтры
+                {t("tours.reset")}
               </Button>
             </Box>
           )}
@@ -233,17 +221,17 @@ function Tours() {
             <Drawer.Content bg="ivory" maxH="85svh" borderTopRadius="lg">
               <Drawer.Header>
                 <Drawer.Title fontFamily="heading" fontSize="32px" fontWeight="500">
-                  Фильтры
+                  {t("tours.filters")}
                 </Drawer.Title>
               </Drawer.Header>
               <Drawer.Body>{renderControls("mobile")}</Drawer.Body>
               <Drawer.Footer>
                 <Button {...goldProps} w="100%" onClick={() => setMobile(false)}>
-                  Показать {formatTrips(filtered.length)}
+                  {t("tours.show", { count: filtered.length })}
                 </Button>
               </Drawer.Footer>
               <Drawer.CloseTrigger asChild>
-                <CloseButton aria-label="Закрыть фильтры" />
+                <CloseButton aria-label={t("tours.closeFilters")} />
               </Drawer.CloseTrigger>
             </Drawer.Content>
           </Drawer.Positioner>
@@ -253,7 +241,7 @@ function Tours() {
   );
 }
 
-function FilterGroup({
+function FilterGroup<T extends string>({
   title,
   name,
   value,
@@ -262,16 +250,16 @@ function FilterGroup({
 }: {
   title: string;
   name: string;
-  value: string;
-  options: string[][];
-  onChange: (value: string) => void;
+  value: T | "";
+  options: readonly (readonly [value: T | "", label: string])[];
+  onChange: (value: T | "") => void;
 }) {
   return (
     <Box py="6" borderBottomWidth="1px" borderColor="line">
       <RadioGroup.Root
         name={name}
         value={value}
-        onValueChange={(details) => onChange(details.value ?? "")}
+        onValueChange={(details) => onChange((details.value ?? "") as T | "")}
       >
         <RadioGroup.Label
           display="block"
@@ -284,8 +272,8 @@ function FilterGroup({
           {title}
         </RadioGroup.Label>
         <Flex direction="column" gap="3">
-          {options.map(([label, option]) => (
-            <RadioGroup.Item key={option || label} value={option ?? ""}>
+          {options.map(([option, label]) => (
+            <RadioGroup.Item key={option || "all"} value={option}>
               <RadioGroup.ItemHiddenInput />
               <RadioGroup.ItemIndicator />
               <RadioGroup.ItemText fontSize="11px" color="mist">

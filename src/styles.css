@@ -1,3 +1,33 @@
+@import "@fontsource-variable/cormorant-garamond/wght.css";
+@import "@fontsource-variable/cormorant-garamond/wght-italic.css";
+@import "@fontsource-variable/manrope/wght.css";
+@import "@fontsource/amiri/arabic-400.css";
+@import "@fontsource/amiri/arabic-700.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-600.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-700.css";
+
+/* Arabic is a connected script: tracking breaks letter joining, and Amiri needs taller lines. */
+[dir="rtl"] * {
+  letter-spacing: 0;
+}
+
+[dir="rtl"] :is(h1, h2, h3, blockquote) {
+  line-height: 1.45;
+}
+
+[dir="rtl"]
+  :is(
+    .lucide-arrow-right,
+    .lucide-arrow-left,
+    .lucide-arrow-up-right,
+    .lucide-chevron-left,
+    .lucide-chevron-right
+  ) {
+  transform: scaleX(-1);
+}
+
 @keyframes page-enter {
   from {
     opacity: 0;

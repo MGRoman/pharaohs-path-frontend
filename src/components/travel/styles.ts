@@ -1,5 +1,7 @@
 import type { ButtonProps, InputProps, TextProps } from "@chakra-ui/react";
 
+export const headerHeight = { base: "70px", md: "82px" } as const;
+
 const ease =
   "transform .45s cubic-bezier(.22,1,.36,1), background .45s, box-shadow .45s, border-color .45s, color .45s, filter .45s";
 

@@ -23,8 +23,10 @@ const config = defineConfig({
         mist: { value: "oklch(0.49 0.02 255)" },
       },
       fonts: {
-        heading: { value: "'Cormorant Garamond', serif" },
-        body: { value: "'Manrope', sans-serif" },
+        heading: { value: "'Cormorant Garamond Variable', 'Amiri', Georgia, serif" },
+        body: {
+          value: "'Manrope Variable', 'IBM Plex Sans Arabic', system-ui, sans-serif",
+        },
       },
     },
     semanticTokens: {

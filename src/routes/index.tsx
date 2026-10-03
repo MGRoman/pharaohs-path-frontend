@@ -20,54 +20,55 @@ import {
   goldProps,
   lineProps,
 } from "@/components/travel/styles";
-import { Eyebrow, SiteContainer } from "@/components/travel/ui";
-import { gallery, images, tours } from "@/data/content";
+import { Eyebrow, SiteContainer, TextLink } from "@/components/travel/ui";
+import { useBudgetLabel } from "@/components/travel/use-budget-label";
+import { budgets, images, regions, type Budget, type GalleryId, type Region } from "@/data/content";
+import { getTranslator, useContent, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
 
-const regions = [
-  "Каир и Гиза",
-  "Луксор",
-  "Асуан",
-  "Шарм-эль-Шейх",
-  "Хургада",
-  "Марса-Алам",
-  "Несколько регионов",
-];
+const heroStats = ["years", "travelers", "routes"] as const;
+const aboutStats = ["years", "travelers", "routes", "support"] as const;
+const previewIds: readonly GalleryId[] = ["karnak-silence", "sinai-reef", "horizon"];
+
+const heroShade = (towards: "left" | "right") =>
+  `linear-gradient(to ${towards}, oklch(0.12 0.025 260 / 0.77), oklch(0.12 0.025 260 / 0.37) 55%, transparent),
+   linear-gradient(0deg, oklch(0.12 0.025 260 / 0.52), transparent 35%)`;
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Pharaoh's Path — путешествия по Египту" },
-      {
-        name: "description",
-        content: "Авторские путешествия по Египту: пирамиды, круизы по Нилу и Красное море.",
-      },
-      { property: "og:title", content: "Pharaoh's Path — путешествия по Египту" },
-      {
-        property: "og:description",
-        content: "Авторские путешествия по Египту: пирамиды, круизы по Нилу и Красное море.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "/" },
-    ],
-    links: [
-      { rel: "canonical", href: "/" },
-      { rel: "preload", as: "image", href: images.giza },
-    ],
-  }),
+  head: ({ match }) => {
+    const { t } = getTranslator(match.context.locale);
+    const page = seo({
+      locale: match.context.locale,
+      title: t("meta.home.title"),
+      description: t("meta.home.description"),
+      path: "/",
+    });
+    return { ...page, links: [...page.links, { rel: "preload", as: "image", href: images.giza }] };
+  },
   component: Home,
 });
 
 function Home() {
+  const { t } = useTranslate();
+  const { tours, gallery } = useContent();
+  const budgetLabel = useBudgetLabel();
   const navigate = useNavigate();
-  const [region, setRegion] = useState("");
+  const [region, setRegion] = useState<Region | "">("");
   const [date, setDate] = useState("");
   const [travelers, setTravelers] = useState("2");
-  const [budget, setBudget] = useState("");
+  const [budget, setBudget] = useState<Budget | "">("");
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    navigate({ to: "/tours", search: { region, date, travelers, budget } });
+    navigate({
+      to: "/tours",
+      search: {
+        ...(region && { region }),
+        ...(budget && { budget }),
+        ...(date && { date }),
+        travelers,
+      },
+    });
   }
 
   return (
@@ -85,7 +86,7 @@ function Home() {
       >
         <Image
           src={images.giza}
-          alt="Пирамиды Гизы в лучах закатного солнца"
+          alt={t("home.heroAlt")}
           className="hero-photo"
           position="absolute"
           inset="0"
@@ -99,13 +100,13 @@ function Home() {
           position="absolute"
           inset="0"
           css={{
-            background:
-              "linear-gradient(90deg, oklch(0.12 0.025 260 / 0.77) 0%, oklch(0.12 0.025 260 / 0.37) 55%, transparent 100%), linear-gradient(0deg, oklch(0.12 0.025 260 / 0.52), transparent 35%)",
+            background: heroShade("right"),
+            "[dir=rtl] &": { background: heroShade("left") },
           }}
         />
         <SiteContainer position="relative" zIndex="1" pt="16">
           <Box className="rise-in" animationDelay="0.08s">
-            <Eyebrow>Искусство путешествовать по Египту</Eyebrow>
+            <Eyebrow>{t("home.eyebrow")}</Eyebrow>
           </Box>
           <Text
             as="h1"
@@ -118,7 +119,7 @@ function Home() {
             my="6"
             animationDelay="0.16s"
           >
-            Египет: там, где оживают легенды
+            {t("home.title")}
           </Text>
           <Text
             className="rise-in"
@@ -128,17 +129,17 @@ function Home() {
             color="whiteAlpha.900"
             animationDelay="0.26s"
           >
-            Авторские путешествия от древних пирамид до коралловых рифов Красного моря.
+            {t("home.lead")}
           </Text>
           <Flex className="rise-in" gap="3" wrap="wrap" mt="8" animationDelay="0.36s">
             <Button asChild {...goldProps}>
               <Link to="/tours">
-                Смотреть туры <ArrowUpRight size={17} />
+                {t("home.viewTours")} <ArrowUpRight size={17} />
               </Link>
             </Button>
             <Button asChild {...lineProps}>
               <Link to="/booking">
-                Подобрать путешествие <ArrowRight size={17} />
+                {t("home.planTrip")} <ArrowRight size={17} />
               </Link>
             </Button>
           </Flex>
@@ -148,45 +149,47 @@ function Home() {
             mt={{ base: "12", md: "16" }}
             animationDelay="0.46s"
           >
-            {[
-              ["12+", "лет опыта"],
-              ["4 800+", "путешественников"],
-              ["35+", "маршрутов"],
-            ].map(([value, label]) => (
-              <Flex key={label} direction="column" borderLeftWidth="1px" borderColor="gold" pl="4">
+            {heroStats.map((key) => (
+              <Flex key={key} direction="column" borderStartWidth="1px" borderColor="gold" ps="4">
                 <Text
                   fontFamily="heading"
                   fontSize={{ base: "25px", md: "30px" }}
                   fontWeight="500"
                   lineHeight="1"
                 >
-                  {value}
+                  {t(`stats.${key}.value`)}
                 </Text>
                 <Text fontSize="10px" color="whiteAlpha.800" mt="1.5">
-                  {label}
+                  {t(`stats.${key}.label`)}
                 </Text>
               </Flex>
             ))}
           </Flex>
         </SiteContainer>
-        <Flex
-          display={{ base: "none", md: "flex" }}
+        {/* Logical insets resolve against the element's own writing mode, so the
+            vertical text lives in a child of the positioned box. */}
+        <Box
+          aria-hidden
+          display={{ base: "none", md: "block" }}
           position="absolute"
           zIndex="1"
-          right="6"
+          insetEnd="6"
           bottom="9"
-          direction="column"
-          align="center"
-          fontSize="10px"
-          letterSpacing="0.2em"
-          textTransform="uppercase"
-          css={{ writingMode: "vertical-rl" }}
         >
-          Листайте вниз{" "}
-          <Icon boxSize="3" mt="3.5">
-            <ArrowDown />
-          </Icon>
-        </Flex>
+          <Flex
+            direction="column"
+            align="center"
+            fontSize="10px"
+            letterSpacing="0.2em"
+            textTransform="uppercase"
+            css={{ writingMode: "vertical-rl" }}
+          >
+            {t("home.scroll")}
+            <Icon boxSize="3" mt="3.5">
+              <ArrowDown />
+            </Icon>
+          </Flex>
+        </Box>
       </Box>
 
       <SiteContainer
@@ -197,6 +200,8 @@ function Home() {
       >
         <Grid
           as="form"
+          role="search"
+          aria-label={t("home.search.label")}
           onSubmit={submit}
           bg="white"
           p={{ base: "5", md: "6" }}
@@ -205,22 +210,24 @@ function Home() {
           gap="3.5"
           alignItems="end"
         >
-          <SearchField label="Направление">
+          <SearchField label={t("home.search.region")}>
             <NativeSelect.Root>
               <NativeSelect.Field
                 value={region}
-                onChange={(event) => setRegion(event.target.value)}
+                onChange={(event) => setRegion(event.target.value as Region | "")}
                 {...fieldControlProps}
               >
-                <option value="">Любое направление</option>
-                {regions.map((item) => (
-                  <option key={item}>{item}</option>
+                <option value="">{t("home.search.anyRegion")}</option>
+                {regions.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`regions.${key}`)}
+                  </option>
                 ))}
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
           </SearchField>
-          <SearchField label="Дата поездки">
+          <SearchField label={t("home.search.date")}>
             <Input
               type="date"
               min={new Date().toISOString().slice(0, 10)}
@@ -229,7 +236,7 @@ function Home() {
               {...fieldControlProps}
             />
           </SearchField>
-          <SearchField label="Путешественники">
+          <SearchField label={t("home.search.travelers")}>
             <Input
               type="number"
               min="1"
@@ -239,24 +246,25 @@ function Home() {
               {...fieldControlProps}
             />
           </SearchField>
-          <SearchField label="Бюджет на человека">
+          <SearchField label={t("home.search.budget")}>
             <NativeSelect.Root>
               <NativeSelect.Field
                 value={budget}
-                onChange={(event) => setBudget(event.target.value)}
+                onChange={(event) => setBudget(event.target.value as Budget | "")}
                 {...fieldControlProps}
               >
-                <option value="">Любой бюджет</option>
-                <option value="low">До 75 000 ₽</option>
-                <option value="mid">75 000–120 000 ₽</option>
-                <option value="high">120 000–200 000 ₽</option>
-                <option value="luxury">От 200 000 ₽</option>
+                <option value="">{t("budgets.any")}</option>
+                {(Object.keys(budgets) as Budget[]).map((key) => (
+                  <option key={key} value={key}>
+                    {budgetLabel(key)}
+                  </option>
+                ))}
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
           </SearchField>
           <Button type="submit" {...goldProps} h="44px" px="5">
-            Найти путешествие <ArrowRight size={16} />
+            {t("home.search.submit")} <ArrowRight size={16} />
           </Button>
         </Grid>
       </SiteContainer>
@@ -271,7 +279,7 @@ function Home() {
           <Box position="relative" h={{ base: "420px", md: "610px" }}>
             <Image
               src={images.nile}
-              alt="Парусная лодка на Ниле у Луксора"
+              alt={t("home.about.imageAlt")}
               w="100%"
               h="100%"
               objectFit="cover"
@@ -282,16 +290,16 @@ function Home() {
               position="absolute"
               w="35%"
               h="30%"
-              borderLeftWidth="1px"
+              borderStartWidth="1px"
               borderBottomWidth="1px"
               borderColor="gold"
               bottom="-20px"
-              left="-20px"
+              insetStart="-20px"
               pointerEvents="none"
             />
           </Box>
           <Box>
-            <Eyebrow>О Pharaoh's Path</Eyebrow>
+            <Eyebrow>{t("home.about.eyebrow")}</Eyebrow>
             <Text
               as="h2"
               fontFamily="heading"
@@ -300,33 +308,19 @@ function Home() {
               lineHeight="1.07"
               my="6"
             >
-              Мы показываем Египет не таким, каким его видят туристы, а таким, каким его запоминают.
+              {t("home.about.title")}
             </Text>
             <Text color="mist" fontSize="sm" lineHeight="1.95" mb="4">
-              Мы верим, что настоящее путешествие начинается там, где заканчивается готовый маршрут.
-              Поэтому каждую поездку мы собираем вокруг вас — ваших интересов, ритма и мечты.
+              {t("home.about.first")}
             </Text>
             <Text color="mist" fontSize="sm" lineHeight="1.95">
-              Приватные встречи с историей, круизы по Нилу, дни у моря и простые моменты рядом с
-              людьми, для которых Египет — дом. Всё это становится вашей личной историей.
+              {t("home.about.second")}
             </Text>
-            <Flex
-              asChild
-              align="center"
-              gap="2"
-              borderBottomWidth="1px"
-              borderColor="gold"
-              pb="2"
-              fontSize="xs"
-              fontWeight="700"
-              mt="6"
-              w="fit-content"
-              _hover={{ color: "gold" }}
-            >
+            <TextLink mt="6">
               <Link to="/about">
-                Узнать о нас <ArrowUpRight size={16} />
+                {t("home.about.link")} <ArrowUpRight size={16} />
               </Link>
-            </Flex>
+            </TextLink>
             <Grid
               templateColumns="repeat(2, 1fr)"
               gap="6"
@@ -335,18 +329,13 @@ function Home() {
               pt="7"
               mt="12"
             >
-              {[
-                ["12+", "лет опыта"],
-                ["4 800+", "путешественников"],
-                ["35+", "маршрутов"],
-                ["24/7", "поддержка"],
-              ].map(([value, label]) => (
-                <Box key={label}>
+              {aboutStats.map((key) => (
+                <Box key={key}>
                   <Text fontFamily="heading" fontSize="34px" fontWeight="500">
-                    {value}
+                    {t(`stats.${key}.value`)}
                   </Text>
                   <Text fontSize="10px" color="mist">
-                    {label}
+                    {t(`stats.${key}.label`)}
                   </Text>
                 </Box>
               ))}
@@ -358,12 +347,11 @@ function Home() {
       <Box as="section" bg="sand" py={{ base: "16", md: "28" }}>
         <SiteContainer>
           <SectionHeading
-            eyebrow="Авторские маршруты"
-            title="Выберите свой Египет"
+            eyebrow={t("home.routes.eyebrow")}
+            title={t("home.routes.title")}
             aside={
               <Text color="mist" lineHeight="1.9" maxW="360px">
-                От первых шагов среди пирамид до последнего заката у моря — найдите путешествие,
-                которое станет вашим.
+                {t("home.routes.text")}
               </Text>
             }
           />
@@ -371,7 +359,7 @@ function Home() {
           <Flex justify="center" mt="10">
             <Button asChild variant="outline" borderRadius="2px" h="12" px="6">
               <Link to="/tours">
-                Все путешествия <ArrowUpRight size={16} />
+                {t("home.routes.all")} <ArrowUpRight size={16} />
               </Link>
             </Button>
           </Flex>
@@ -381,24 +369,14 @@ function Home() {
       <Box as="section" py={{ base: "16", md: "28" }}>
         <SiteContainer>
           <SectionHeading
-            eyebrow="Моменты путешествия"
-            title="Египет в кадре"
+            eyebrow={t("home.moments.eyebrow")}
+            title={t("home.moments.title")}
             aside={
-              <Flex
-                asChild
-                align="center"
-                gap="2"
-                borderBottomWidth="1px"
-                borderColor="gold"
-                pb="2"
-                fontSize="xs"
-                fontWeight="700"
-                _hover={{ color: "gold" }}
-              >
+              <TextLink>
                 <Link to="/gallery">
-                  Смотреть галерею <ArrowUpRight size={16} />
+                  {t("home.moments.link")} <ArrowUpRight size={16} />
                 </Link>
-              </Flex>
+              </TextLink>
             }
           />
           <Grid
@@ -407,20 +385,22 @@ function Home() {
             h={{ base: "280px", md: "430px" }}
             overflow="hidden"
           >
-            {[gallery[2], gallery[4], gallery[5]].map((item, index) => (
-              <Image
-                key={item?.title ?? index}
-                src={item?.image}
-                alt={item?.title || "Египет"}
-                w="100%"
-                h="100%"
-                objectFit="cover"
-                loading="lazy"
-                display={index === 2 ? { base: "none", md: "block" } : "block"}
-                transition="transform .8s cubic-bezier(.22,1,.36,1)"
-                _hover={{ transform: "scale(1.03)" }}
-              />
-            ))}
+            {gallery
+              .filter((item) => previewIds.includes(item.id))
+              .map((item, index) => (
+                <Image
+                  key={item.id}
+                  src={item.image}
+                  alt={item.title}
+                  w="100%"
+                  h="100%"
+                  objectFit="cover"
+                  loading="lazy"
+                  display={index === 2 ? { base: "none", md: "block" } : "block"}
+                  transition="transform .8s cubic-bezier(.22,1,.36,1)"
+                  _hover={{ transform: "scale(1.03)" }}
+                />
+              ))}
           </Grid>
         </SiteContainer>
       </Box>

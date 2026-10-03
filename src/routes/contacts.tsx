@@ -1,45 +1,51 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Box, Flex, Icon, Text } from "@chakra-ui/react";
+import { Box, Flex, Icon, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { MapPin } from "lucide-react";
 import { FAQ, PageIntro } from "@/components/travel/site";
 import { SiteContainer } from "@/components/travel/ui";
+import { getTranslator, useTranslate } from "@/i18n";
+import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/contacts")({
-  head: () => ({
-    meta: [
-      { title: "Контакты — Pharaoh's Path" },
-      {
-        name: "description",
-        content: "Свяжитесь с Pharaoh’s Path и обсудите ваше путешествие по Египту.",
-      },
-      { property: "og:title", content: "Контакты — Pharaoh's Path" },
-      {
-        property: "og:description",
-        content: "Мы поможем спланировать ваше путешествие по Египту.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "/contacts" },
-    ],
-    links: [{ rel: "canonical", href: "/contacts" }],
-  }),
+  head: ({ match }) => {
+    const { t } = getTranslator(match.context.locale);
+    return seo({
+      locale: match.context.locale,
+      title: t("meta.pageTitle", { title: t("meta.contacts.title") }),
+      description: t("meta.contacts.description"),
+      path: "/contacts",
+    });
+  },
   component: Contacts,
 });
 
-const lines = [
-  ["Электронная почта", "hello@pharaohspath.ru", "mailto:hello@pharaohspath.ru"],
-  ["Заявка на путешествие", "Оставить заявку на сайте →", "/booking"],
-  ["Телефон, мессенджеры и офис", "Контакты появятся после запуска сервиса", ""],
-  ["Время ответа", "Демонстрационная версия — сообщения не отправляются", ""],
-] as const;
+const email = "hello@pharaohspath.ru";
 
 function Contacts() {
+  const { t } = useTranslate();
+  const lines = [
+    {
+      label: t("contacts.email"),
+      value: (
+        <ChakraLink href={`mailto:${email}`} dir="ltr">
+          {email}
+        </ChakraLink>
+      ),
+    },
+    {
+      label: t("contacts.request"),
+      value: <Link to="/booking">{t("contacts.requestLink")}</Link>,
+    },
+    { label: t("contacts.phone"), value: <Text>{t("contacts.phoneValue")}</Text> },
+    { label: t("contacts.response"), value: <Text>{t("contacts.responseValue")}</Text> },
+  ];
+
   return (
     <Box>
       <PageIntro
-        eyebrow="Всегда на связи"
-        title="Начнём разговор?"
-        text="Расскажите, каким вы представляете своё путешествие. Мы поможем превратить идею в маршрут."
+        eyebrow={t("contacts.eyebrow")}
+        title={t("contacts.title")}
+        text={t("contacts.text")}
       />
       <SiteContainer
         display="grid"
@@ -52,13 +58,14 @@ function Contacts() {
             Pharaoh's Path
           </Text>
           <Text color="mist" mt="3">
-            Для каждого путешествия найдётся своё начало. Пусть это будет простой разговор.
+            {t("contacts.lead")}
           </Text>
           <Flex direction="column" gap="6" mt="8">
-            {lines.map(([label, value, href]) => (
+            {lines.map(({ label, value }) => (
               <Flex
                 key={label}
                 direction="column"
+                align="start"
                 gap="2"
                 pb="4"
                 borderBottomWidth="1px"
@@ -67,20 +74,14 @@ function Contacts() {
                 <Text color="gold" fontSize="10px" textTransform="uppercase" letterSpacing="0.12em">
                   {label}
                 </Text>
-                {href.startsWith("mailto:") ? (
-                  <a href={href}>{value}</a>
-                ) : href === "/booking" ? (
-                  <Link to="/booking">{value}</Link>
-                ) : (
-                  <Text>{value}</Text>
-                )}
+                {value}
               </Flex>
             ))}
           </Flex>
         </Box>
         <Flex
           role="img"
-          aria-label="Схематичная карта Египта"
+          aria-label={t("contacts.mapLabel")}
           minH="350px"
           bg="sand"
           position="relative"
@@ -103,10 +104,10 @@ function Contacts() {
               <MapPin />
             </Icon>
             <Text fontFamily="heading" fontSize="29px" fontWeight="500">
-              Египет ждёт вас
+              {t("contacts.mapTitle")}
             </Text>
             <Text fontSize="11px" color="mist">
-              От Каира до Красного моря
+              {t("contacts.mapText")}
             </Text>
           </Box>
         </Flex>

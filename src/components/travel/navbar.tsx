@@ -2,35 +2,40 @@ import { Box, Button, Flex, Icon, IconButton } from "@chakra-ui/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
+import { useTranslate } from "@/i18n";
 import { Brand } from "./brand";
+import { LanguageSwitcher } from "./language-switcher";
 import { nav } from "./nav";
-import { goldProps } from "./styles";
+import { goldProps, headerHeight } from "./styles";
 import { SiteContainer } from "./ui";
 
-export function Navbar() {
-  const path = useRouterState({ select: (s) => s.location.pathname });
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
+const fade = ".4s cubic-bezier(.4,0,.2,1)";
 
+const layer = {
+  content: '""',
+  position: "absolute",
+  inset: "0",
+  zIndex: "-1",
+  pointerEvents: "none",
+} as const;
+
+/** Scroll events already fire at most once per frame, and React skips same-value updates. */
+function useScrolled(threshold: number) {
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    let frame = 0;
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        setScrolled((prev) => {
-          const next = window.scrollY > 48;
-          return prev === next ? prev : next;
-        });
-      });
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
+    const update = () => setScrolled(window.scrollY > threshold);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [threshold]);
+  return scrolled;
+}
+
+export function Navbar() {
+  const { t, formatNumber } = useTranslate();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const scrolled = useScrolled(48);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [path]);
 
@@ -47,71 +52,74 @@ export function Navbar() {
   return (
     <Box
       as="header"
-      position={overlay ? "fixed" : "sticky"}
+      position="fixed"
       top="0"
+      insetInline="0"
       zIndex="40"
-      w="100%"
-      h={{ base: "70px", md: "82px" }}
+      h={headerHeight}
+      isolation="isolate"
       color={light ? "ivory" : "navy"}
-      bg={open ? "navy" : overlay ? "transparent" : "ivory"}
-      backdropFilter={overlay || open ? undefined : "blur(20px)"}
-      borderBottomWidth="1px"
-      borderColor={overlay || open ? "transparent" : "line"}
-      boxShadow={!overlay && scrolled ? "0 10px 30px oklch(0.19 0.025 258 / 0.08)" : "none"}
-      css={
-        overlay
-          ? { background: "linear-gradient(to bottom, oklch(0.12 0.02 260 / 0.48), transparent)" }
-          : undefined
-      }
-      transition="background .45s, color .45s, border-color .45s, box-shadow .45s"
+      transition={`color ${fade}`}
+      _before={{
+        ...layer,
+        bg: open ? "navy" : "ivory/88",
+        backdropFilter: "saturate(1.4) blur(18px)",
+        borderBottomWidth: "1px",
+        borderColor: open ? "transparent" : "line",
+        boxShadow: scrolled && !open ? "0 10px 30px oklch(0.19 0.025 258 / 0.08)" : "none",
+        opacity: overlay ? 0 : 1,
+        transition: `opacity ${fade}, background-color ${fade}, box-shadow ${fade}`,
+      }}
+      _after={{
+        ...layer,
+        bgImage: "linear-gradient(to bottom, oklch(0.12 0.02 260 / 0.48), transparent)",
+        opacity: overlay ? 1 : 0,
+        transition: `opacity ${fade}`,
+      }}
     >
-      <SiteContainer h="100%" display="flex" alignItems="center" gap={{ base: "3", lg: "8" }}>
+      <SiteContainer h="100%" display="flex" alignItems="center" gap={{ base: "3", lg: "6" }}>
         <Brand light={light} />
         <Flex
           as="nav"
-          aria-label="Главное меню"
+          aria-label={t("nav.main")}
           display={{ base: "none", lg: "flex" }}
           align="center"
           gap="7"
-          ml="auto"
+          ms="auto"
         >
-          {nav.map((item) => {
-            const active = path === item.to;
-            return (
-              <Link key={item.to} to={item.to}>
-                <Box
-                  as="span"
-                  fontSize="xs"
-                  fontWeight="600"
-                  color={active ? "gold" : "inherit"}
-                  position="relative"
-                  _hover={{ color: "gold" }}
-                  transition="color .3s"
-                >
-                  {item.label}
-                </Box>
-              </Link>
-            );
-          })}
+          {nav.map((item) => (
+            <Link key={item.to} to={item.to}>
+              <Box
+                as="span"
+                fontSize="xs"
+                fontWeight="600"
+                color={path === item.to ? "gold" : "inherit"}
+                transition="color .3s"
+                _hover={{ color: "gold" }}
+              >
+                {t(item.label)}
+              </Box>
+            </Link>
+          ))}
         </Flex>
+        <LanguageSwitcher display={{ base: "none", lg: "flex" }} />
         <Button
           asChild
           {...goldProps}
           h="44px"
           px="4"
-          ml={{ base: "0", lg: "2" }}
           display={{ base: "none", lg: "inline-flex" }}
         >
           <Link to="/booking">
-            Забронировать <ArrowUpRight size={16} />
+            {t("nav.book")} <ArrowUpRight size={16} />
           </Link>
         </Button>
         <IconButton
-          aria-label={open ? "Закрыть меню" : "Открыть меню"}
+          aria-label={open ? t("nav.close") : t("nav.open")}
           aria-expanded={open}
           variant="ghost"
           color="inherit"
-          ml="auto"
+          ms="auto"
           display={{ base: "inline-flex", lg: "none" }}
           onClick={() => setOpen((value) => !value)}
         >
@@ -121,13 +129,12 @@ export function Navbar() {
       {open && (
         <Flex
           as="nav"
-          aria-label="Мобильное меню"
+          aria-label={t("nav.mobile")}
           direction="column"
           position="fixed"
-          top={{ base: "70px", md: "82px" }}
-          left="0"
-          right="0"
-          h={{ base: "calc(100svh - 70px)", md: "calc(100svh - 82px)" }}
+          top={headerHeight}
+          insetInline="0"
+          bottom="0"
           bg="navy"
           color="ivory"
           px="6"
@@ -156,18 +163,19 @@ export function Navbar() {
                   color="gold"
                   w="30px"
                 >
-                  0{index + 1}
+                  {formatNumber(index + 1, { minimumIntegerDigits: 2 })}
                 </Box>
-                {item.label}
-                <Icon boxSize="5" ml="auto">
+                {t(item.label)}
+                <Icon boxSize="5" ms="auto">
                   <ArrowUpRight />
                 </Icon>
               </Link>
             </Flex>
           ))}
-          <Button asChild {...goldProps} mt="7">
+          <LanguageSwitcher mt="6" />
+          <Button asChild {...goldProps} mt="6">
             <Link to="/booking">
-              Забронировать путешествие <ArrowRight size={17} />
+              {t("nav.bookTrip")} <ArrowRight size={17} />
             </Link>
           </Button>
         </Flex>

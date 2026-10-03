@@ -2,7 +2,7 @@ import { Accordion, Box, Button, Flex, IconButton, Text } from "@chakra-ui/react
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { faq, testimonials } from "@/data/content";
+import { useContent, useTranslate } from "@/i18n";
 import { goldProps } from "./styles";
 import { Eyebrow, SiteContainer } from "./ui";
 
@@ -72,6 +72,7 @@ export function PageIntro({
 }
 
 export function ReadyCTA() {
+  const { t } = useTranslate();
   return (
     <Box as="section" bg="navy" color="ivory" py="20">
       <SiteContainer
@@ -82,7 +83,7 @@ export function ReadyCTA() {
         flexDirection={{ base: "column", md: "row" }}
       >
         <Box>
-          <Eyebrow>Следующий шаг</Eyebrow>
+          <Eyebrow>{t("sections.cta.eyebrow")}</Eyebrow>
           <Text
             as="h2"
             fontFamily="heading"
@@ -91,15 +92,15 @@ export function ReadyCTA() {
             lineHeight="1.04"
             my="4"
           >
-            Ваш Египет начинается здесь
+            {t("sections.cta.title")}
           </Text>
           <Text fontSize="sm" color="whiteAlpha.800">
-            Расскажите, о каком путешествии вы мечтаете. Остальное мы продумаем вместе.
+            {t("sections.cta.text")}
           </Text>
         </Box>
         <Button asChild {...goldProps} flexShrink={0}>
           <Link to="/booking">
-            Подобрать путешествие <ArrowUpRight size={18} />
+            {t("sections.cta.button")} <ArrowUpRight size={18} />
           </Link>
         </Button>
       </SiteContainer>
@@ -108,6 +109,8 @@ export function ReadyCTA() {
 }
 
 export function FAQ() {
+  const { t } = useTranslate();
+  const { faq } = useContent();
   return (
     <Box as="section" bg="sand" py={{ base: "16", md: "28" }}>
       <SiteContainer
@@ -116,7 +119,7 @@ export function FAQ() {
         gap={{ base: "8", lg: "24" }}
       >
         <Box>
-          <Eyebrow>Вопросы и ответы</Eyebrow>
+          <Eyebrow>{t("sections.faq.eyebrow")}</Eyebrow>
           <Text
             as="h2"
             fontFamily="heading"
@@ -125,27 +128,27 @@ export function FAQ() {
             lineHeight="1.04"
             my="5"
           >
-            Перед путешествием
+            {t("sections.faq.title")}
           </Text>
           <Text color="mist" maxW="350px" fontSize="sm" lineHeight="1.8">
-            Мы собрали ответы на вопросы, которые помогут вам увереннее планировать поездку.
+            {t("sections.faq.text")}
           </Text>
           <Button asChild variant="outline" mt="6" borderRadius="2px">
             <Link to="/contacts">
-              Задать свой вопрос <ArrowUpRight size={16} />
+              {t("sections.faq.ask")} <ArrowUpRight size={16} />
             </Link>
           </Button>
         </Box>
         <Accordion.Root collapsible>
-          {faq.map(([question, answer], index) => (
-            <Accordion.Item key={question} value={`item-${index}`} borderColor="line">
-              <Accordion.ItemTrigger py="5" fontSize="sm" textAlign="left">
-                {question}
+          {faq.map((item) => (
+            <Accordion.Item key={item.id} value={item.id} borderColor="line">
+              <Accordion.ItemTrigger py="5" fontSize="sm" textAlign="start">
+                {item.question}
                 <Accordion.ItemIndicator />
               </Accordion.ItemTrigger>
               <Accordion.ItemContent>
                 <Accordion.ItemBody fontSize="xs" lineHeight="1.8" color="mist" pb="4">
-                  {answer}
+                  {item.answer}
                 </Accordion.ItemBody>
               </Accordion.ItemContent>
             </Accordion.Item>
@@ -157,17 +160,26 @@ export function FAQ() {
 }
 
 export function Testimonials() {
+  const { t, dir } = useTranslate();
+  const { testimonials } = useContent();
+  const total = testimonials.length;
   const [index, setIndex] = useState(0);
   const [pause, setPause] = useState(false);
   const touchX = useRef(0);
 
   useEffect(() => {
     if (pause) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % testimonials.length), 6500);
+    const timer = setInterval(() => setIndex((i) => (i + 1) % total), 6500);
     return () => clearInterval(timer);
-  }, [pause]);
+  }, [pause, total]);
+
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + total) % total);
+    setPause(true);
+  };
 
   const item = testimonials[index] ?? testimonials[0];
+  if (!item) return null;
 
   return (
     <Box
@@ -181,14 +193,18 @@ export function Testimonials() {
       }}
       onTouchEnd={(event) => {
         const dx = (event.changedTouches[0]?.clientX ?? 0) - touchX.current;
-        if (Math.abs(dx) > 45)
-          setIndex((i) => (i + (dx < 0 ? 1 : testimonials.length - 1)) % testimonials.length);
+        if (Math.abs(dx) < 45) return;
+        const towardsStart = dir === "rtl" ? dx > 0 : dx < 0;
+        go(towardsStart ? 1 : -1);
       }}
     >
       <SiteContainer>
-        <SectionHeading eyebrow="Впечатления" title="Истории наших путешественников" />
+        <SectionHeading
+          eyebrow={t("sections.testimonials.eyebrow")}
+          title={t("sections.testimonials.title")}
+        />
         <Flex
-          key={item?.name}
+          key={item.id}
           maxW="900px"
           mx="auto"
           mt="8"
@@ -197,6 +213,7 @@ export function Testimonials() {
           className="rise-in"
         >
           <Text
+            aria-hidden
             fontFamily="heading"
             fontSize="180px"
             lineHeight="0.8"
@@ -204,10 +221,16 @@ export function Testimonials() {
             h={{ base: "50px", md: "auto" }}
             overflow="hidden"
           >
-            “
+            {dir === "rtl" ? "”" : "“"}
           </Text>
-          <Box animation="rise-in .55s cubic-bezier(.22,1,.36,1)">
-            <Text color="gold" letterSpacing="5px" fontSize="sm" aria-label="5 из 5 звёзд">
+          <Box>
+            <Text
+              color="gold"
+              letterSpacing="5px"
+              fontSize="sm"
+              role="img"
+              aria-label={t("sections.testimonials.stars")}
+            >
               ★★★★★
             </Text>
             <Text
@@ -218,10 +241,11 @@ export function Testimonials() {
               lineHeight="1.27"
               my="6"
             >
-              {item?.text}
+              {item.text}
             </Text>
             <Flex align="center" gap="3">
               <Flex
+                aria-hidden
                 w="42px"
                 h="42px"
                 bg="sand"
@@ -233,14 +257,14 @@ export function Testimonials() {
                 fontWeight="600"
                 borderRadius="full"
               >
-                {item?.name.slice(0, 1)}
+                {item.name.slice(0, 1)}
               </Flex>
               <Box>
                 <Text fontSize="xs" fontWeight="700">
-                  {item?.name}
+                  {item.name}
                 </Text>
                 <Text fontSize="11px" color="mist" mt="1">
-                  {item?.city} · {item?.tour}
+                  {item.city} · {item.tour}
                 </Text>
               </Box>
             </Flex>
@@ -248,11 +272,12 @@ export function Testimonials() {
         </Flex>
         <Flex maxW="790px" mx="auto" mt="8" justify="space-between" align="center">
           <Flex>
-            {testimonials.map((_, dot) => (
+            {testimonials.map((entry, dot) => (
               <IconButton
-                key={dot}
+                key={entry.id}
                 variant="ghost"
-                aria-label={`Показать отзыв ${dot + 1}`}
+                aria-label={t("sections.testimonials.show", { index: dot + 1 })}
+                aria-current={dot === index ? "true" : undefined}
                 onClick={() => {
                   setIndex(dot);
                   setPause(true);
@@ -271,21 +296,15 @@ export function Testimonials() {
           <Flex gap="2">
             <IconButton
               variant="outline"
-              aria-label="Предыдущий отзыв"
-              onClick={() => {
-                setIndex((index + testimonials.length - 1) % testimonials.length);
-                setPause(true);
-              }}
+              aria-label={t("sections.testimonials.previous")}
+              onClick={() => go(-1)}
             >
               <ChevronLeft />
             </IconButton>
             <IconButton
               variant="outline"
-              aria-label="Следующий отзыв"
-              onClick={() => {
-                setIndex((index + 1) % testimonials.length);
-                setPause(true);
-              }}
+              aria-label={t("sections.testimonials.next")}
+              onClick={() => go(1)}
             >
               <ChevronRight />
             </IconButton>

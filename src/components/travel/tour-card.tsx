@@ -1,9 +1,10 @@
 import { Box, Flex, IconButton, Image, Text } from "@chakra-ui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Star } from "lucide-react";
-import { formatDays, formatPrice, tours, type Tour } from "@/data/content";
+import { useTranslate, type LocalizedTour } from "@/i18n";
 
-export function TourCard({ tour }: { tour: Tour }) {
+export function TourCard({ tour }: { tour: LocalizedTour }) {
+  const { t, formatPrice, formatRating } = useTranslate();
   return (
     <Box
       as="article"
@@ -30,7 +31,7 @@ export function TourCard({ tour }: { tour: Tour }) {
           <Box
             position="absolute"
             top="17px"
-            left="17px"
+            insetStart="17px"
             bg="ivory"
             color="navy"
             fontSize="10px"
@@ -38,17 +39,23 @@ export function TourCard({ tour }: { tour: Tour }) {
             px="3"
             py="2"
           >
-            {tour.type}
+            {t(`tourTypes.${tour.type}`)}
           </Box>
         </Link>
       </Box>
       <Box p="6">
         <Flex justify="space-between" gap="2" color="mist" fontSize="10px">
           <span>
-            {formatDays(tour.days)} · {tour.region}
+            {t("common.days", { count: tour.days })} · {t(`regions.${tour.region}`)}
           </span>
-          <Flex align="center" gap="1" color="gold" whiteSpace="nowrap">
-            <Star size={14} fill="currentColor" /> {tour.rating}
+          <Flex
+            align="center"
+            gap="1"
+            color="gold"
+            whiteSpace="nowrap"
+            aria-label={t("common.rating", { value: formatRating(tour.rating) })}
+          >
+            <Star size={14} fill="currentColor" aria-hidden /> {formatRating(tour.rating)}
           </Flex>
         </Flex>
         <Text as="h3" fontFamily="heading" fontSize="30px" fontWeight="500" lineHeight="1.1" my="4">
@@ -71,19 +78,19 @@ export function TourCard({ tour }: { tour: Tour }) {
         >
           <Box>
             <Box as="small" fontSize="10px" color="mist">
-              от
+              {t("common.from")}
             </Box>
             <Box as="strong" fontFamily="heading" fontSize="25px" fontWeight="600" mx="1">
               {formatPrice(tour.price)}
             </Box>
             <Box as="small" fontSize="10px" color="mist">
-              / чел.
+              {t("common.perPerson")}
             </Box>
           </Box>
           <IconButton
             asChild
             variant="outline"
-            aria-label={`Подробнее: ${tour.title}`}
+            aria-label={t("common.details", { title: tour.title })}
             borderRadius="2px"
           >
             <Link to="/tours/$id" params={{ id: tour.id }}>
@@ -96,7 +103,7 @@ export function TourCard({ tour }: { tour: Tour }) {
   );
 }
 
-export function TourGrid({ items = tours }: { items?: Tour[] }) {
+export function TourGrid({ items }: { items: readonly LocalizedTour[] }) {
   return (
     <Box
       display="grid"
